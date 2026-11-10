@@ -1,0 +1,41 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>학년·학과별 이수 기록</title><style>
+*{box-sizing:border-box}body{margin:0;background:#f4f6f8;color:#263449;font:15px/1.7 'Malgun Gothic',sans-serif}header{padding:32px max(5vw,20px);background:#263e59;color:white}header a{color:#c9dbf4}h1{margin:12px 0;font-size:30px}main{max-width:1250px;margin:28px auto;padding:0 20px}.note{background:#fff6df;border-left:4px solid #c79d36;padding:16px 20px;margin:20px 0}.panel{background:white;padding:24px;border-radius:12px;border:1px solid #dbe1e8}.filters{display:flex;gap:16px;flex-wrap:wrap}label{display:block;font-weight:bold}select,input{display:block;font:inherit;margin-top:7px;padding:10px;border:1px solid #aab8c9;border-radius:6px;max-width:100%}select{min-width:160px}input{width:320px}select:focus-visible,input:focus-visible,a:focus-visible{outline:3px solid #789bc6;outline-offset:3px}.metrics{display:flex;gap:30px;flex-wrap:wrap;margin:24px 0}.metric{background:#edf2f7;padding:12px 20px;border-radius:8px}.metric strong{font-size:25px;display:block}.scroll{overflow-x:auto}table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:14px 12px;border-bottom:1px solid #e0e5ec}th{background:#edf2f7;white-space:nowrap}td.number{text-align:right;font-variant-numeric:tabular-nums}small,.muted{color:#617086}.tag{font-size:12px;background:#eef2f7;padding:4px 8px;border-radius:5px}a{color:#2d5c96}.foot{padding:20px 0;color:#617086;font-size:13px}#description{margin:16px 0}.empty{text-align:center;padding:35px}@media(max-width:600px){header{padding:24px}h1{font-size:25px}.panel{padding:16px}.filters>div{width:100%}input,select{width:100%}}
+</style></head><body><header><a href="index.html">← 관심 기반 비교과 추천</a><h1>같은 학년·학과는 어떤 활동을 이수했을까요?</h1><p>공개 시연용 가상 이수 기록입니다. 실제 학생 자료는 포함하지 않습니다.</p></header><main>
+<div class="note"><strong>공개 시연용 가상 통계입니다.</strong> 실제 학생의 이수 기록이나 학과별 빈도를 나타내지 않습니다.</div>
+<section class="panel"><div class="filters"><div><label for="grade">재적학년</label><select id="grade"><option value="">전체 학년</option></select></div><div><label for="department">소속전공명</label><select id="department"><option value="">전체 학과·전공</option></select></div><div><label for="organizer">주관부서</label><select id="organizer"><option value="">전체 주관부서</option><option>성균인성교육센터</option></select></div><div><label for="keyword">이수 프로그램 찾기</label><input type="search" id="keyword" placeholder="예: AI, 진로, 포트폴리오"></div></div>
+<div class="metrics"><div class="metric">선택 집단의 전체 이수기록<strong id="total">—</strong></div><div class="metric">검색된 프로그램 수<strong id="program-count">—</strong></div><div class="metric">전체 제공 이수기록<strong id="source-count">—</strong></div></div>
+<p id="description" aria-live="polite"></p><div class="scroll"><table><thead><tr><th>순위</th><th>이수 프로그램</th><th>이수기록(건)</th><th>집단 내 구성비</th><th>주관부서</th><th>노션 연결</th></tr></thead><tbody id="rows"></tbody></table></div>
+<p class="muted">구성비 = 해당 프로그램 이수기록 ÷ 같은 학년·학과 집단의 추천 대상 전체 이수기록. 필수·비추천 3개 항목은 분자와 분모에서 제외했습니다. 검색·주관부서 필터로 목록을 좁혀도 분모는 바뀌지 않습니다. 학생의 비율·선호도·만족도를 뜻하지 않습니다.</p></section>
+<div class="foot">교내 성적우수 장학·학생건강검진·금연상담교실은 추천용 집계에서 제외했습니다. 성균·흥인·돈의·숭례·홍지 및 성균서연·성균리더캠프는 성균인성교육센터로 분류했습니다. 프로그램명 포함으로 연결하며, 연도·회차가 다르면 같은 프로그램 계열의 참고 링크입니다. 데이터는 서버로 전송하지 않습니다.</div></main><script src="completion-evidence.js"></script><script>
+'use strict';
+const data=window.COMPLETION_EVIDENCE,t=data.tables,$=id=>document.getElementById(id),master=new Map(t.programs.map(p=>[p.program_id,p]));
+function el(tag,text){const n=document.createElement(tag);if(text!==undefined)n.textContent=text;return n;}
+for(const r of t.grades){const n=el('option',r.grade+'학년');n.value=r.grade;$('grade').append(n);}
+for(const d of [...data.departments].sort((a,b)=>a.localeCompare(b,'ko'))){const n=el('option',d);n.value=d;$('department').append(n);}
+$('source-count').textContent=data.metadata.source_rows.toLocaleString()+'건';
+function render(){
+ const grade=$('grade').value,department=$('department').value,keyword=$('keyword').value.trim().toLowerCase();
+ let rows,base,label;
+ if(grade&&department){rows=t.program_cohort.filter(r=>r.grade===grade&&r.department===department);base=t.cohorts.find(r=>r.grade===grade&&r.department===department)?.completion_records||0;label=department+' '+grade+'학년';}
+ else if(grade){rows=t.program_grade.filter(r=>r.grade===grade);base=t.grades.find(r=>r.grade===grade)?.completion_records||0;label=grade+'학년 전체';}
+ else if(department){rows=t.program_department.filter(r=>r.department===department);base=t.departments.find(r=>r.department===department)?.completion_records||0;label=department+' 전체 학년';}
+ else{rows=t.programs;base=data.metadata.accepted_records;label='전체 집단';}
+ rows=rows.filter(r=>(!$('organizer').value||master.get(r.program_id)?.organizer===$('organizer').value)&&(!keyword||[r.program_name,r.program_code,r.organizer||''].join(' ').toLowerCase().includes(keyword))).sort((a,b)=>b.completion_records-a.completion_records||a.program_name.localeCompare(b.program_name,'ko'));
+ $('total').textContent=base.toLocaleString()+'건';$('program-count').textContent=rows.length.toLocaleString();$('description').textContent=label+'의 이수기록 상위 '+Math.min(30,rows.length)+'개를 표시합니다. 이름이 같은 기록은 회차를 합산하며, 프로그램 코드가 다른 기록은 구분합니다.';
+ const host=$('rows');host.replaceChildren();
+ if(!rows.length){const tr=el('tr'),td=el('td','이 조건의 이수기록이 없습니다.');td.colSpan=6;td.className='empty';tr.append(td);host.append(tr);}
+ rows.slice(0,30).forEach((r,i)=>{
+  const tr=el('tr'),title=el('td'),count=el('td',r.completion_records.toLocaleString()),share=el('td',(100*r.completion_records/base).toFixed(1)+'%'),linkCell=el('td');
+  title.append(el('strong',r.program_name),el('br'),el('small',r.program_code));count.className=share.className='number';
+  const matches=t.notion_matches.filter(x=>x.program_id===r.program_id&&x.usable===1);
+  if(matches.length){
+   const details=el('details'),summary=el('summary',`연결된 노션 ${matches.length}개 보기`);details.append(summary);
+   for(const match of matches){const div=el('div'),a=el('a',match.notion_title+' ↗');a.href=match.notion_url;a.target='_blank';a.rel='noopener noreferrer';div.append(a,el('br'),el('small',match.match_method+' · 연도·회차·모집 상태는 원문 확인'));details.append(div);}
+   linkCell.append(details);
+  }else linkCell.append(el('span','포함되는 프로그램명 없음'));
+  const rank=1+rows.filter(x=>x.completion_records>r.completion_records).length;tr.append(el('td',rank),title,count,share,el('td',master.get(r.program_id)?.organizer||'미확인'),linkCell);host.append(tr);
+ });
+}
+for(const id of ['grade','department','organizer','keyword'])$(id).addEventListener(id==='keyword'?'input':'change',render);
+render();
+</script></body></html>
